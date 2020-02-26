@@ -1,4 +1,5 @@
 const Express = require("express");
+const cors = require('cors')
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
@@ -13,6 +14,7 @@ var db = mongoose.connection
 var orderCollection = db.collection('orders')
 
 var app = Express();
+app.use(cors);
 app.use(BodyParser.json());
 app.use(BodyParser.urlencoded({ extended: true }));
 
