@@ -5,6 +5,7 @@ const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
 const CONNECTION_URL = 'mongodb+srv://rkvapi:rkvapi@cluster0-athos.mongodb.net/bazinga?retryWrites=true';
 const DATABASE_NAME = "bazinga";
+const PORT = process.env.PORT || 8000
 
 let mongoose = require('mongoose')
 
@@ -68,7 +69,7 @@ app.delete('/orders/:id', (req, res) => {
         })
 });
 
-app.listen(5000, () => {
+app.listen(PORT, () => {
     MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
         if (error) {
             throw error;
