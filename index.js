@@ -1,32 +1,76 @@
-let express = require('express')
-let bodyParser = require('body-parser')
-let cors = require('cors')
+const Express = require("express");
+const BodyParser = require("body-parser");
+const MongoClient = require("mongodb").MongoClient;
+const ObjectId = require("mongodb").ObjectID;
+const CONNECTION_URL = 'mongodb+srv://rkvapi:rkvapi@cluster0-athos.mongodb.net/bazinga?retryWrites=true';
+const DATABASE_NAME = "bazinga";
 
-let app = express()
-var allowedOrigins = ['http://localhost:3000', 'https://bazinga-dev.herokuapp.com'];
-app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            var msg = 'The CORS policy for this site does not ' +
-                'allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+let mongoose = require('mongoose')
+
+mongoose.connect('mongodb+srv://rkvapi:rkvapi@cluster0-athos.mongodb.net/bazinga?retryWrites=true', { useNewUrlParser: true, useUnifiedTopology: true })
+var db = mongoose.connection
+
+var orderCollection = db.collection('orders')
+
+var app = Express();
+app.use(BodyParser.json());
+app.use(BodyParser.urlencoded({ extended: true }));
+
+app.post("/orders", (request, response) => {
+    orderCollection.insert(request.body, (error, result) => {
+        if (error) {
+            return response.status(500).send(error);
         }
-        return callback(null, true);
-    }
-}));
-let storeApiRoutes = require('./store/api-routes')
+        response.send(result.ops);
+    });
+});
 
-var PORT = process.env.PORT || 8000
+app.get("/orders", (request, response) => {
+    orderCollection.find({}).toArray((error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        response.send(result);
+    });
+});
 
-app.use(bodyParser.urlencoded(
-    {
-        extended: true
-    }
-));
-app.use(bodyParser.json())
+app.get("/orders/:id", (request, response) => {
+    orderCollection.findOne({ "_id": new ObjectId(request.params.id) }, (error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        response.send(result);
+    });
+});
 
-app.use('/api/v1', storeApiRoutes)
-app.listen(PORT, () => {
-    console.log(`Server started on ${PORT}`)
+app.patch('/orders/:id', (req, res) => {
+    const options = { returnNewDocument: true };
+    orderCollection.findOneAndUpdate({ "_id": new ObjectId(req.params.id) }, { "$set": req.body }, options)
+        .then(updatedDocument => {
+            if (updatedDocument) {
+                res.json(updatedDocument.value);
+            } else {
+                res.send('Error:');
+            }
+        })
+});
+
+app.delete('/orders/:id', (req, res) => {
+    orderCollection.findOneAndDelete({ "_id": new ObjectId(req.params.id) })
+        .then(deletedDocument => {
+            if (deletedDocument) {
+                res.send('Successfully Deleted!');
+            } else {
+                res.send('Error while deleting!');
+            }
+        })
+});
+
+app.listen(5000, () => {
+    MongoClient.connect(CONNECTION_URL, { useNewUrlParser: true }, (error, client) => {
+        if (error) {
+            throw error;
+        }
+        console.log("Connected to `" + DATABASE_NAME + "`!");
+    });
 });
