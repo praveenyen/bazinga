@@ -15,7 +15,7 @@ var orderCollection = db.collection('orders')
 var app = Express();
 var allowedOrigins = ['http://localhost:3000', 'http://yourapp.com']
 app.use(cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             var msg = 'The CORS policy for this site does not ' +
@@ -28,7 +28,7 @@ app.use(cors({
 app.use(BodyParser.json());
 app.use(BodyParser.urlencoded({ extended: true }));
 
-app.post("/orders", (request, response) => {
+app.post("/api/v1/orders", (request, response) => {
     orderCollection.insert(request.body, (error, result) => {
         if (error) {
             return response.status(500).send(error);
@@ -37,8 +37,7 @@ app.post("/orders", (request, response) => {
     });
 });
 
-app.get("/orders", (request, response) => {
-    console.log('Welcome get orders')
+app.get("/api/v1/orders", (request, response) => {
     orderCollection.find({}).toArray((error, result) => {
         if (error) {
             return response.status(500).send(error);
@@ -47,7 +46,7 @@ app.get("/orders", (request, response) => {
     });
 });
 
-app.get("/orders/:id", (request, response) => {
+app.get("/api/v1/orders/:id", (request, response) => {
     orderCollection.findOne({ "_id": new ObjectId(request.params.id) }, (error, result) => {
         if (error) {
             return response.status(500).send(error);
@@ -56,19 +55,27 @@ app.get("/orders/:id", (request, response) => {
     });
 });
 
-app.patch('/orders/:id', (req, res) => {
-    const options = { returnNewDocument: true };
-    orderCollection.findOneAndUpdate({ "_id": new ObjectId(req.params.id) }, { "$set": req.body }, options)
-        .then(updatedDocument => {
-            if (updatedDocument) {
-                res.json(updatedDocument.value);
-            } else {
-                res.send('Error:');
-            }
-        })
+app.patch('/api/v1/orders/:id', (req, res) => {
+    orderCollection.findOne({ "_id": new ObjectId(req.params.id) }, (error, result) => {
+        if (error) {
+            return response.status(500).send(error);
+        }
+        result['customer']['email'] = req.body.email;
+        result['customer']['phone'] = req.body.phone;
+
+        const options = { returnNewDocument: true };
+        orderCollection.findOneAndUpdate({ "_id": new ObjectId(req.params.id) }, { "$set": result }, options)
+            .then(updatedDocument => {
+                if (updatedDocument) {
+                    res.json(updatedDocument.value);
+                } else {
+                    res.send('Error:');
+                }
+            })
+    });
 });
 
-app.delete('/orders/:id', (req, res) => {
+app.delete('/api/v1/orders/:id', (req, res) => {
     orderCollection.findOneAndDelete({ "_id": new ObjectId(req.params.id) })
         .then(deletedDocument => {
             if (deletedDocument) {
